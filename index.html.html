@@ -1,0 +1,182 @@
+<!DOCTYPE html> 
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Para Cynthia 💜</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle, #ffffff 0%, #ff4d4d 50%, #800000 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Fondo interior oscuro difuminado */
+        #heart-bg {
+            position: absolute;
+            width: 750px;
+            height: 700px;
+            background: radial-gradient(circle at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0) 75%);
+            border-radius: 50%;
+            z-index: 2;
+            filter: blur(40px);
+        }
+
+        #text-container {
+            position: absolute;
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            width: 550px;
+            text-align: center;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .letter {
+            display: inline-block;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 20px; /* MÁS GRANDE */
+            color: #ffffff;
+            text-shadow: 3px 3px #000;
+            transition: all 0.2s ease-out;
+            white-space: pre;
+            margin: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="heart-bg"></div>
+    <div id="text-container"></div>
+    <canvas id="heart"></canvas>
+
+    <script>
+        const canvas = document.getElementById('heart');
+        const ctx = canvas.getContext('2d');
+        const textContainer = document.getElementById('text-container');
+        
+        let ww = canvas.width = window.innerWidth;
+        let wh = canvas.height = window.innerHeight;
+
+        const particles = [];
+        const mouse = { x: -1000, y: -1000 };
+        const phrase = "Infiel yo Cynthia? jajaj yo me aburro tanto que te programo esto pa ti ";
+
+        // Crear texto letra a letra
+        phrase.split("").forEach((char) => {
+            const span = document.createElement("span");
+            span.innerText = char === " " ? "\u00A0" : char;
+            span.className = "letter";
+            textContainer.appendChild(span);
+        });
+
+        const letters = document.querySelectorAll(".letter");
+
+        window.addEventListener("mousemove", (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+
+            letters.forEach((letter) => {
+                const rect = letter.getBoundingClientRect();
+                const lx = rect.left + rect.width / 2;
+                const ly = rect.top + rect.height / 2;
+                const dist = Math.hypot(mouse.x - lx, mouse.y - ly);
+
+                if (dist < 80) {
+                    const angle = Math.atan2(ly - mouse.y, lx - mouse.x);
+                    const shift = (80 - dist) / 1.5;
+                    letter.style.transform =
+                        `translate(${Math.cos(angle) * shift}px, ${Math.sin(angle) * shift}px) scale(1.4)`;
+                    
+                    /* Blanco más brillante */
+                    letter.style.color = "#ffffff";
+                    letter.style.textShadow = "0 0 15px #ffffff, 3px 3px #000";
+                } else {
+                    letter.style.transform = "translate(0,0) scale(1)";
+                    letter.style.color = "#ffffff";
+                    letter.style.textShadow = "3px 3px #000";
+                }
+            });
+        });
+
+        // Partículas corazón (más grande y más grueso)
+        function Particle(x, y) {
+            this.x = Math.random() * ww;
+            this.y = Math.random() * wh;
+            this.dest = { x: ww / 2 + x * 28, y: wh / 2 + y * 28 }; // MÁS GRANDE
+            this.r = Math.random() * 4 + 3; // MÁS GROSOR
+            this.vx = (Math.random() - 0.5) * 25;
+            this.vy = (Math.random() - 0.5) * 25;
+            this.accX = 0;
+            this.accY = 0;
+            this.friction = 0.92;
+        }
+
+        Particle.prototype.render = function() {
+            this.accX = (this.dest.x - this.x) / 80;
+            this.accY = (this.dest.y - this.y) / 80;
+            this.vx += this.accX;
+            this.vy += this.accY;
+            this.vx *= this.friction;
+            this.vy *= this.friction;
+            this.x += this.vx;
+            this.y += this.vy;
+
+            let dx = this.x - mouse.x;
+            let dy = this.y - mouse.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 90) {
+                this.vx += (this.x - mouse.x) / 6;
+                this.vy += (this.y - mouse.y) / 6;
+            }
+
+            ctx.fillStyle = "#ff0000";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#ff0000";
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function init() {
+            particles.length = 0;
+            for (let i = 0; i < Math.PI * 2; i += 0.02) {
+                let x = 16 * Math.pow(Math.sin(i), 3);
+                let y = -(13 * Math.cos(i) - 5 * Math.cos(2 * i) - 2 * Math.cos(3 * i) - Math.cos(4 * i));
+                particles.push(new Particle(x, y));
+            }
+        }
+
+        function render() {
+            requestAnimationFrame(render);
+            ctx.clearRect(0, 0, ww, wh);
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].render();
+            }
+        }
+
+        window.addEventListener("resize", () => {
+            ww = canvas.width = window.innerWidth;
+            wh = canvas.height = window.innerHeight;
+            init();
+        });
+
+        init();
+        render();
+    </script>
+</body>
+</html>
